@@ -1,0 +1,157 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="./jquery-3.3.1.min.js"></script>
+    <script type="text/javascript">
+      var MAGIC_BIN_NUM = 0x654321;
+      // 在今年年底，Google 会忽略包含 Falsh 的页面内容，也将不再收录 Flash 文件。
+         //return JSON.parse(new TextDecoder("utf-8").decode(new Uint8Array(ev.data)))
+         var ws;
+
+         function msg(){
+            var msg = $("#msg").val();
+            ws.send(msg);
+         }
+
+         function biny(){
+            // var biny = $("#biny").val();
+
+            // var blob = new Blob([biny], {
+            //     type: 'text/plain'
+            // });
+            var dataType = 101;
+            // 创建一个 4个 字节的数组缓冲区
+            var arrayBuffer = new ArrayBuffer(4);
+            var dataView = new DataView(arrayBuffer);
+            // 从第0个字节开始，写一个 int 类型的数据(dataType)，占4个字节
+            dataView.setInt32(0, dataType);
+            // 组装成 blob 对象
+            var blob = new Blob([arrayBuffer,arrayBuffer]);
+            // 发送到 webSocket 服务器端
+            ws.send(blob);
+         }
+
+        function sen_pic(){
+          var files = $('#wspic')[0].files;
+          if (!files || !files.length) {
+            return ;
+          }
+          //获取后缀
+          var ext = getExtCode();
+          var file = files[0];
+          fileProto(file, ext)  
+        
+        }
+        //文件传输协议  
+        function fileProto(file, ext){
+          var fileReader = new FileReader();
+          fileReader.readAsArrayBuffer(file);
+          fileReader.onload = function (e) {
+            var result = e.target.result;
+
+            var extBuffer = new ArrayBuffer(5);
+            var dataView = new DataView(extBuffer);
+            dataView.setInt32(0, MAGIC_BIN_NUM);
+            //1个字节数组缓冲区写扩展类型
+            dataView.setInt8(4, ext);
+
+            var blob = new Blob([extBuffer,result]);
+            //通过websocket发送二进制数据流
+            ws.send(blob);
+          }
+        }     
+
+         function getExtCode(){
+            var extArr = {jpg:100,jpeg:101,png:102};
+            var file=$('#wspic').val(); 
+            var filename=file.replace(/.*(\/|\\)/, ""); 
+            var fileExt=(/[.]/.exec(filename)) ? /[^.]+$/.exec(filename.toLowerCase()) : '';
+            console.log(fileExt[0]);
+            var ext = fileExt[0];
+            console.log(ext);
+            console.log(extArr[ext]);
+            return extArr[ext];
+         }
+
+
+       function ab2str(u,f) {
+         var b = new Blob([u]);
+         var r = new FileReader();
+          r.readAsText(b, 'utf-8');
+          r.onload = function (){if(f)f.call(null,r.result)}
+      }
+      //字符串转字符串ArrayBuffer
+      function str2ab(s,f) {
+          var b = new Blob([s],{type:'text/plain'});
+          var r = new FileReader();
+          r.readAsArrayBuffer(b);
+          r.onload = function (){if(f)f.call(null,r.result)}
+      }
+
+      </script>
+</head>
+<body>
+<div>
+    <textarea id="con"></textarea>
+</div>
+<div id="sse">
+    <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+</div>
+<div>
+    <input id="msg" type="text" name="msg"><button onclick="msg()">发送数据</button>
+</div>
+
+<div>
+    <input id="biny" type="text" name="biny"><button onclick="biny()">发送二进制数据</button>
+</div>
+
+<div>
+    选择图片： <input type="file" id="wspic"><button onclick="sen_pic()" >发送图片</button>
+
+</div>
+</body>
+
+<script type="text/javascript">
+
+   WebSocketTest()
+    function WebSocketTest(){
+            if ("WebSocket" in window){
+               ws = new WebSocket("ws://127.0.0.1:1234");
+               ws.onopen = function(){
+                  // Web Socket 已连接上，使用 send() 方法发送数据
+                  ws.send("发送数据");
+                  //alert("数据发送中...");
+               };
+               ws.onmessage = function (evt) {
+                  var reader = new FileReader();
+                  if (evt.data instanceof Blob){
+                     reader.readAsText(evt.data,"UTF-8");
+                     reader.onload = function(e){
+                        var str=reader.result;
+                        console.log(reader.result)
+                        $("#con").append(e.target.result);
+                     }
+                  }
+
+               };
+               ws.onclose = function(){
+                  console.log("连接已关闭...");
+               };
+            }
+         }
+
+function binaryToStr(str){
+    var result = [];
+    var list = str.split(" ");
+    for(var i=0;i<list.length;i++){
+         var item = list[i];
+         var asciiCode = parseInt(item,2);
+         var charValue = String.fromCharCode(asciiCode);
+         result.push(charValue);
+    }
+    return result.join("");
+}
+</script>
+
+</html>

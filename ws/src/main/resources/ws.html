@@ -1,0 +1,91 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="./jquery-3.3.1.min.js"></script>
+    <script type="text/javascript">
+         //return JSON.parse(new TextDecoder("utf-8").decode(new Uint8Array(ev.data)))
+         var ws;
+
+         function msg(){
+            var msg = $("#msg").val();
+            ws.send(msg);
+         }
+
+         function biny(){
+            var biny = $("#biny").val();
+
+            var blob = new Blob([biny], {
+                type: 'text/plain'
+            });
+            var fileReader = new FileReader();
+            fileReader.readAsArrayBuffer(blob);
+            fileReader.onload = function (e) {
+                // 获取到文件对象
+                var result = e.target.result;
+                // 发送数据到服务器端
+                ws.send(result)
+            }
+
+            //ws.send(bin);
+         }
+      </script>
+</head>
+<body>
+<div>
+    <textarea id="con"></textarea>
+</div>
+<div id="sse">
+    <a href="javascript:WebSocketTest()">运行 WebSocket</a>
+</div>
+<div>
+    <input id="msg" type="text" name="msg"><button onclick="msg()">发送数据</button>
+</div>
+
+<div>
+    <input id="biny" type="text" name="biny"><button onclick="biny()">发送二进制数据</button>
+</div>
+</body>
+
+<script type="text/javascript">
+   WebSocketTest()
+    function WebSocketTest(){
+            if ("WebSocket" in window){
+               ws = new WebSocket("ws://127.0.0.1:1234");
+               ws.onopen = function(){
+                  // Web Socket 已连接上，使用 send() 方法发送数据
+                  ws.send("发送数据");
+                  //alert("数据发送中...");
+               };
+               ws.onmessage = function (evt) {
+                  var reader = new FileReader();
+                  if (evt.data instanceof Blob){
+                     reader.readAsText(evt.data,"UTF-8");
+                     reader.onload = function(e){
+                        var str=reader.result;
+                        console.log(reader.result)
+                        $("#con").append(e.target.result);
+                     }
+                  }
+
+               };
+               ws.onclose = function(){
+                  alert("连接已关闭...");
+               };
+            }
+         }
+
+function binaryToStr(str){
+    var result = [];
+    var list = str.split(" ");
+    for(var i=0;i<list.length;i++){
+         var item = list[i];
+         var asciiCode = parseInt(item,2);
+         var charValue = String.fromCharCode(asciiCode);
+         result.push(charValue);
+    }
+    return result.join("");
+}
+</script>
+
+</html>
